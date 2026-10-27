@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>JS 조건문</h1>
+    <hr>
+    <h1>JS 반복분</h1>
+    <script>
+        let number = prompt('정수를 입력하세요.');
+        let num = 1;
+        while( num <= number ){
+            document.write( num+'<br>');
+            num++;
+        }
+        for( num = 1; num <= number; num++ ) {
+            document.write( num+'<br>');
+        }
+
+        let sum = 0;
+        let i = 0;
+        for( i = 1 ; i <= 100 ; i++) {
+            sum = sum + i;
+        }
+        document.write(sum+'<br>');
+    </script>
+</body>
+</html>

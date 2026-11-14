@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +9,7 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
     $(document).ready(function(){
+
         $("p").hover(function(){
             $(this).css('color', 'red');
         }, function(){
@@ -17,20 +19,20 @@
         $("a").click(function(e){
             e.preventDefault();
             location.href="https://www.naver.com";
-        
+        });
+
         $("button").click(function(e){
-            $("img").fadetoggle(1000);
-        
+            $("img").fadeToggle(1000);
         });
-        });
+
     });
 </script>
 <body>
     <h1>jQuery 이벤트 처리</h1>
-    <p><a href = "https://www.syu.ac.kr">삼육대학교</a></p>
+    <p><a href="https://www.syu.ac.kr">삼육대학교</a></p>
     <p>인공지능 융합학부</p>
     <p>인공지능 융합학부</p>
-    <img src="https://th.bing.com/th/id/OIP.phJeJZJ7sttBhdiZLDmEnAHaHS?w=186&h=184&c=7&r=0&o=7&pid=1.7&rm=3"
+    <img src="https://th.bing.com/th/id/OIP.phJeJZJ7sttBhdiZLDmEnAHaHS?w=186&h=184&c=7&r=0&o=7&pid=1.7&rm=3"><br>
     <button>클릭</button>
 </body>
 </html>

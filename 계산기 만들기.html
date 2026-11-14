@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    h1 { text-align: center;}
+    .disp { width: 205px; height: 40px; margin-top: 3px;}
+    .disp { text-align: right; font-family: "Oxanium"; font-size: 22pt}
+    input[type=button] {width: 50px; height: 50px; margin-top: 5px; text-align: center; vertical-align: middle;}
+    #calc { width: 220px; margin-left: auto; margin-right: auto;}
+
+</style>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+    // eval 대신 직접 만든 계산 함수
+    function calculate(expr) {
+        // 숫자와 연산자를 분리 (예: "2+3*4" -> ["2","+","3","*","4"])
+        let tokens = expr.match(/\d+|[+\-*/]/g);
+
+        // 1단계: 곱셈, 나눗셈 먼저 계산
+        let stage = [Number(tokens[0])];
+        for (let i = 1; i < tokens.length; i += 2) {
+            let op = tokens[i];
+            let right = Number(tokens[i + 1]);
+            if (op == "*") {
+                stage[stage.length - 1] *= right;
+            } else if (op == "/") {
+                stage[stage.length - 1] /= right;
+            } else {
+                stage.push(op, right);
+            }
+        }
+
+        // 2단계: 덧셈, 뺄셈을 왼쪽부터 계산
+        let result = stage[0];
+        for (let i = 1; i < stage.length; i += 2) {
+            if (stage[i] == "+") {
+                result += stage[i + 1];
+            } else {
+                result -= stage[i + 1];
+            }
+        }
+        return result;
+    }
+
+    $(document).ready(function(){
+        $(".num").click(function(){
+            let cur = $("#disp2").val();
+            let n = $(this).val();
+            $("#disp2").val(cur+n);
+        });
+        $(".op").click(function(){
+            let cur = $("#disp2").val();
+            let n = $(this).val();
+            if( n != "=") {
+                $("#disp2").val(cur+n);
+            }
+            else {
+                let result = calculate(cur);
+                $("#disp1").val(cur);
+                $("#disp2").val(result);
+            }
+        });
+        // AC 버튼: 초기화
+        $(".func").click(function(){
+            $("#disp1").val("");
+            $("#disp2").val("");
+        });
+    });
+</script>
+<body>
+    <h1>계산기</h1>
+    <div id="calc">
+        <div>
+            <input type="text" class="disp" id="disp1" readonly>
+            <input type="text" class="disp" id="disp2" readonly>
+        </div>
+        <input type="button" class="num" value="7">
+        <input type="button" class="num" value="8">
+        <input type="button" class="num" value="9">
+        <input type="button" class="op" value="+"><br>
+        <input type="button" class="num" value="4">
+        <input type="button" class="num" value="5">
+        <input type="button" class="num" value="6">
+        <input type="button" class="op" value="-"><br>
+        <input type="button" class="num" value="1">
+        <input type="button" class="num" value="2">
+        <input type="button" class="num" value="3">
+        <input type="button" class="op" value="*"><br>
+        <input type="button" class="func" value="ac">
+        <input type="button" class="num" value="0">
+        <input type="button" class="op" value="=">
+        <input type="button" class="op" value="/">
+    </div>
+</body>
+</html>

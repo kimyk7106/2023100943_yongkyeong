@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공학용 계산기</title>
+    <style>
+        :root {
+            --bg: #14161c;
+            --panel: #1d2029;
+            --key: #2a2e3a;
+            --key-hover: #353a49;
+            --fn: #23324a;
+            --fn-hover: #2c4163;
+            --op: #3a2f57;
+            --op-hover: #4a3d6e;
+            --accent: #ff8a3d;
+            --accent-hover: #ffa05f;
+            --danger: #5a2b33;
+            --danger-hover: #763641;
+            --text: #eef0f6;
+            --muted: #8d93a5;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+            padding: 16px;
+        }
+        h1 { font-size: 20px; font-weight: 600; margin: 0 0 14px; letter-spacing: 0.5px; }
+
+        #wrap {
+            width: 100%;
+            max-width: 400px;
+        }
+        #calc {
+            background: var(--panel);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        }
+        #screen {
+            position: relative;          /* S 표시를 화면 안쪽 구석에 배치하기 위한 기준 */
+            background: #0f1116;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            text-align: right;
+        }
+        /* SHIFT가 켜지면 화면 안 왼쪽 위 구석에 작게 표시되는 S */
+        #sIndicator {
+            position: absolute;
+            top: 8px;
+            left: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: var(--accent);
+            color: #1a1208;
+            visibility: hidden;
+        }
+        #sIndicator.on { visibility: visible; }
+        .disp {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+        .disp::-webkit-scrollbar { display: none; }
+        #disp1 { min-height: 22px; font-size: 14px; color: var(--muted); }
+        #disp2 { min-height: 44px; line-height: 44px; font-size: 30px; font-weight: 500; }
+        #keys { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+
+        button {
+            position: relative;
+            height: 52px;
+            padding: 12px 0 0;           /* 위쪽은 작은 글씨 자리 */
+            border: none;
+            border-radius: 10px;
+            background: var(--key);
+            color: var(--text);
+            font-size: 17px;
+            cursor: pointer;
+            transition: background 0.12s, transform 0.05s;
+        }
+        button:hover { background: var(--key-hover); }
+        button:active { transform: scale(0.95); }
+        button.fn { background: var(--fn); font-size: 16px; }
+        button.fn:hover { background: var(--fn-hover); }
+        button.op { background: var(--op); font-size: 19px; }
+        button.op:hover { background: var(--op-hover); }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: var(--danger-hover); }
+        button.span2 { grid-column: span 2; }
+        button.eq { grid-column: span 5; background: var(--accent); color: #1a1208; font-size: 22px; font-weight: 600; padding-top: 0; }
+        button.eq:hover { background: var(--accent-hover); }
+        button.plain { padding-top: 0; }   /* 위쪽 작은 글씨가 없는 버튼은 가운데 정렬 */
+        #mode { font-size: 13px; font-weight: 600; color: var(--accent); }
+        #shift { font-size: 14px; font-weight: 700; }
+        #shift.on { background: var(--accent); color: #1a1208; }
+
+        /* 버튼 위의 작은 글씨 (shift를 눌렀을 때 입력되는 기호) */
+        .alt {
+            position: absolute;
+            top: 4px;
+            left: 0;
+            right: 0;
+            font-size: 10px;
+            line-height: 12px;
+            color: var(--accent);
+            opacity: 0.85;
+            pointer-events: none;
+        }
+        /* shift가 켜지면 작은 글씨가 밝게 강조됨 */
+        #keys.shifted .alt { opacity: 1; font-size: 11px; font-weight: 700; color: #ffd2ad; }
+
+        .hint { margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>공학용 계산기</h1>
+    <div id="wrap">
+        <div id="calc">
+            <div id="screen">
+                <span id="sIndicator" title="SHIFT 활성화">S</span>
+                <span class="disp" id="disp1"></span>
+                <span class="disp" id="disp2">0</span>
+            </div>
+            <div id="keys">
+                <button id="shift" class="fn plain" data-act="shift">SHIFT</button>
+                <button id="mode" class="fn plain">DEG</button>
+                <button class="danger plain" data-act="del">DEL</button>
+                <button class="danger plain span2" data-act="ac">AC</button>
+
+                <button class="fn" data-ins="sin(" data-alt="asin("><span class="alt">sin⁻¹</span>sin</button>
+                <button class="fn" data-ins="cos(" data-alt="acos("><span class="alt">cos⁻¹</span>cos</button>
+                <button class="fn" data-ins="tan(" data-alt="atan("><span class="alt">tan⁻¹</span>tan</button>
+                <button class="fn" data-ins="log(" data-alt="ln("><span class="alt">ln</span>log</button>
+                <button class="fn" data-ins="π" data-alt="e"><span class="alt">e</span>π</button>
+
+                <button class="fn" data-ins="^2" data-alt="^3"><span class="alt">x³</span>x²</button>
+                <button class="fn" data-ins="√(" data-alt="∛("><span class="alt">∛</span>√</button>
+                <button class="fn" data-ins="^" data-alt="!"><span class="alt">n!</span>xʸ</button>
+                <button class="fn" data-ins="(" data-alt=")"><span class="alt">)</span>(</button>
+                <button class="fn plain" data-ins="%">%</button>
+
+                <button data-ins="7" class="plain">7</button>
+                <button data-ins="8" class="plain">8</button>
+                <button data-ins="9" class="plain">9</button>
+                <button class="op plain" data-ins="÷">÷</button>
+                <button class="op plain" data-ins="×">×</button>
+
+                <button data-ins="4" class="plain">4</button>
+                <button data-ins="5" class="plain">5</button>
+                <button data-ins="6" class="plain">6</button>
+                <button class="op plain" data-ins="−">−</button>
+                <button class="op plain" data-ins="+">+</button>
+
+                <button data-ins="1" class="plain">1</button>
+                <button data-ins="2" class="plain">2</button>
+                <button data-ins="3" class="plain">3</button>
+                <button data-ins="0" class="plain">0</button>
+                <button data-ins="." class="plain">.</button>
+
+                <button class="eq" data-act="eq">=</button>
+            </div>
+        </div>
+    </div>
+    <div class="hint">SHIFT를 누른 뒤 버튼을 누르면 버튼 위의 작은 글씨가 입력돼요 (한 번 쓰면 꺼짐)</div>
+
+<script>
+    // ===== ENGINE START (eval을 쓰지 않고 직접 만든 수식 계산기) =====
+    const FUNCS = ["sin", "cos", "tan", "asin", "acos", "atan", "log", "ln", "sqrt", "cbrt"];
+
+    // 1) 문자열 -> 토큰 배열
+    function tokenize(src) {
+        const s = src.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
+        const re = /\s*(?:(\d+\.?\d*|\.\d+)|([a-z]+|π|√|∛)|([+\-*/^()!%]))/y;
+        const tokens = [];
+        while (re.lastIndex < s.length) {
+            const m = re.exec(s);
+            if (!m) throw new Error("token");
+            if (m[1] !== undefined) tokens.push({ t: "num", v: m[1] });
+            else if (m[2] !== undefined) {
+                const name = m[2] === "√" ? "sqrt" : m[2] === "∛" ? "cbrt" : m[2];
+                tokens.push({ t: "id", v: name });
+            }
+            else tokens.push({ t: "op", v: m[3] });
+        }
+        return tokens;
+    }
+
+    function factorial(n) {
+        if (n < 0 || n > 170 || !Number.isInteger(n)) throw new Error("factorial");
+        let r = 1;
+        for (let k = 2; k <= n; k++) r *= k;
+        return r;
+    }
+
+    // 2) 함수 적용 (deg가 true면 각도를 '도' 단위로 처리)
+    function applyFunc(name, x, deg) {
+        const toRad = (a) => (deg ? (a * Math.PI) / 180 : a);
+        const fromRad = (a) => (deg ? (a * 180) / Math.PI : a);
+        switch (name) {
+            case "sin": return Math.sin(toRad(x));
+            case "cos": return Math.cos(toRad(x));
+            case "tan":
+                if (deg && Math.abs(x % 180) === 90) throw new Error("tan");
+                return Math.tan(toRad(x));
+            case "asin": return fromRad(Math.asin(x));
+            case "acos": return fromRad(Math.acos(x));
+            case "atan": return fromRad(Math.atan(x));
+            case "log": return Math.log10(x);
+            case "ln": return Math.log(x);
+            case "sqrt": return Math.sqrt(x);
+            case "cbrt": return Math.cbrt(x);
+        }
+        throw new Error("func");
+    }
+
+    // 3) 재귀 하강 파서: 우선순위 = 덧셈/뺄셈 < 곱셈/나눗셈 < 부호 < 거듭제곱 < !,% < 괄호/함수
+    function evaluate(src, deg) {
+        const t = tokenize(src);
+        let i = 0;
+        const peek = () => t[i];
+        const isOp = (tok, v) => tok && tok.t === "op" && tok.v === v;
+        const startsPrimary = (tok) => tok && (tok.t === "num" || tok.t === "id" || isOp(tok, "("));
+
+        function expr() {
+            let v = term();
+            while (isOp(peek(), "+") || isOp(peek(), "-")) {
+                const o = t[i++].v;
+                const r = term();
+                v = o === "+" ? v + r : v - r;
+            }
+            return v;
+        }
+        function term() {
+            let v = unary();
+            while (true) {
+                const p = peek();
+                if (isOp(p, "*")) { i++; v *= unary(); }
+                else if (isOp(p, "/")) { i++; v /= unary(); }
+                else if (startsPrimary(p)) { v *= unary(); }   // 2π, 3(4+5) 같은 생략된 곱셈
+                else break;
+            }
+            return v;
+        }
+        function unary() {
+            if (isOp(peek(), "-")) { i++; return -unary(); }
+            if (isOp(peek(), "+")) { i++; return unary(); }
+            return power();
+        }
+        function power() {
+            const base = postfix();
+            if (isOp(peek(), "^")) { i++; return Math.pow(base, unary()); }
+            return base;
+        }
+        function postfix() {
+            let v = primary();
+            while (isOp(peek(), "!") || isOp(peek(), "%")) {
+                v = t[i++].v === "!" ? factorial(v) : v / 100;
+            }
+            return v;
+        }
+        function primary() {
+            const tok = t[i++];
+            if (!tok) throw new Error("end");
+            if (tok.t === "num") return parseFloat(tok.v);
+            if (isOp(tok, "(")) {
+                const v = expr();
+                if (isOp(peek(), ")")) i++;
+                return v;
+            }
+            if (tok.t === "id") {
+                if (tok.v === "π") return Math.PI;
+                if (tok.v === "e") return Math.E;
+                if (FUNCS.includes(tok.v)) {
+                    if (!isOp(peek(), "(")) throw new Error("paren");
+                    i++;
+                    const v = expr();
+                    if (isOp(peek(), ")")) i++;
+                    return applyFunc(tok.v, v, deg);
+                }
+            }
+            throw new Error("syntax");
+        }
+
+        const result = expr();
+        if (i < t.length) throw new Error("syntax");
+        if (!Number.isFinite(result)) throw new Error("math");
+        return Math.abs(result) < 1e-12 ? 0 : result;   // sin(180°) 같은 미세 오차 정리
+    }
+
+    // 4) 결과를 화면용 문자열로 (큰/작은 수는 ×10^n 형태, 다시 계산에 쓸 수 있음)
+    function formatResult(r) {
+        let s = String(parseFloat(r.toPrecision(12)));
+        return s.replace(/e\+?(-?\d+)/, "×10^($1)");
+    }
+    // ===== ENGINE END =====
+
+    // ===== 화면 / 버튼 처리 =====
+    let expr = "";
+    let justEval = false;
+    let deg = true;
+    let shiftOn = false;     // SHIFT 상태: 한 번 쓰면 자동으로 꺼짐
+
+    const $d1 = document.getElementById("disp1");
+    const $d2 = document.getElementById("disp2");
+    const $shift = document.getElementById("shift");
+    const $keys = document.getElementById("keys");
+    const $sInd = document.getElementById("sIndicator");
+
+    function render() {
+        $d2.textContent = expr === "" ? "0" : expr;
+        $d2.scrollLeft = $d2.scrollWidth;
+    }
+
+    // SHIFT 상태를 바꾸고 화면의 표시(S 글자, 버튼 색, 작은 글씨 강조)를 갱신
+    function setShift(on) {
+        shiftOn = on;
+        $shift.classList.toggle("on", on);
+        $keys.classList.toggle("shifted", on);
+        $sInd.classList.toggle("on", on);
+    }
+
+    function press(ins) {
+        if (justEval) {
+            const continues = /^[+−×÷^!%]/.test(ins) && expr !== "Error";
+            if (!continues) expr = "";
+            justEval = false;
+        }
+        expr += ins;
+        render();
+    }
+
+    function del() {
+        if (justEval) { allClear(); return; }
+        expr = expr.replace(/(?:a?(?:sin|cos|tan)|log|ln|√|∛)\($|.$/, "");
+        render();
+    }
+
+    function allClear() {
+        expr = "";
+        justEval = false;
+        $d1.textContent = "";
+        render();
+    }
+
+    function equals() {
+        if (expr === "" || expr === "Error") return;
+        // 닫히지 않은 괄호는 자동으로 닫기
+        const open = (expr.match(/\(/g) || []).length - (expr.match(/\)/g) || []).length;
+        const full = expr + ")".repeat(Math.max(open, 0));
+        try {
+            const result = evaluate(full, deg);
+            $d1.textContent = full + " =";
+            expr = formatResult(result);
+        } catch (e) {
+            $d1.textContent = full + " =";
+            expr = "Error";
+        }
+        justEval = true;
+        render();
+    }
+
+    document.querySelectorAll("#keys button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            // SHIFT 버튼: 켜기/끄기
+            if (btn.dataset.act === "shift") { setShift(!shiftOn); return; }
+
+            if (btn.dataset.ins !== undefined) {
+                // SHIFT가 켜져 있고 작은 글씨(alt)가 있는 버튼이면 alt 입력
+                if (shiftOn && btn.dataset.alt !== undefined) press(btn.dataset.alt);
+                else press(btn.dataset.ins);
+            }
+            else if (btn.dataset.act === "del") del();
+            else if (btn.dataset.act === "ac") allClear();
+            else if (btn.dataset.act === "eq") equals();
+
+            setShift(false);   // 어떤 버튼이든 한 번 누르면 SHIFT 꺼짐
+        });
+    });
+
+    document.getElementById("mode").addEventListener("click", function () {
+        deg = !deg;
+        this.textContent = deg ? "DEG" : "RAD";
+        setShift(false);
+    });
+
+    document.addEventListener("keydown", (e) => {
+        const k = e.key;
+        if (/^[0-9.()^!%+]$/.test(k)) press(k);
+        else if (k === "*") press("×");
+        else if (k === "/") { e.preventDefault(); press("÷"); }
+        else if (k === "-") press("−");
+        else if (k === "Enter" || k === "=") { e.preventDefault(); equals(); }
+        else if (k === "Backspace") del();
+        else if (k === "Escape") allClear();
+    });
+</script>
+</body>
+</html>
